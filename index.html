@@ -226,14 +226,22 @@
       window.onload = function () {
         const storedData = localStorage.getItem("salesData");
         if (storedData) {
-          salesData = JSON.parse(storedData);
-          renderTable();
+          try {
+            salesData = JSON.parse(storedData);
+            console.log("Data berhasil dimuat dari LocalStorage:", salesData);
+            renderTable();
+          } catch (e) {
+            console.error("Gagal memparsing data dari LocalStorage:", e);
+            salesData = [];
+            saveData();
+          }
         }
       };
 
       // Menyimpan data ke LocalStorage
       function saveData() {
         localStorage.setItem("salesData", JSON.stringify(salesData));
+        console.log("Data disimpan ke LocalStorage:", salesData);
       }
 
       // Menambahkan baris item baru
@@ -258,6 +266,7 @@
             </div>
         `;
         itemsContainer.appendChild(itemRow);
+        console.log("Baris item baru ditambahkan");
       }
 
       // Event listener untuk menambah item
@@ -269,6 +278,7 @@
           const itemRows = document.querySelectorAll(".item-row");
           if (itemRows.length > 1) {
             e.target.closest(".item-row").remove();
+            console.log("Baris item dihapus");
           } else {
             alert("Minimal harus ada satu barang.");
           }
@@ -330,6 +340,7 @@
           salesTableBody.appendChild(row);
         });
         grandTotalElem.textContent = formatRupiah(grandTotal);
+        console.log("Tabel dirender ulang dengan data:", salesData);
       }
 
       // Event listener untuk form submission
@@ -371,6 +382,7 @@
 
         // Menambahkan data ke array
         salesData.push({ salesName, date, items });
+        console.log("Laporan baru ditambahkan:", { salesName, date, items });
 
         // Menyimpan dan merender tabel
         saveData();
@@ -400,6 +412,7 @@
                 </div>
             </div>
         `;
+        console.log("Form direset setelah penyimpanan");
 
         alert("Laporan berhasil disimpan.");
       });
@@ -411,13 +424,20 @@
           return;
         }
 
+        if (salesData.length === 0) {
+          alert("Tidak ada data laporan yang tersedia untuk dicetak.");
+          return;
+        }
+
         try {
+          console.log("Meminta perangkat Bluetooth...");
           // Meminta perangkat Bluetooth dengan layanan Printer (UUID bisa disesuaikan)
           const device = await navigator.bluetooth.requestDevice({
             filters: [{ services: ["00001855-0000-1000-8000-00805f9b34fb"] }], // Contoh UUID untuk Printer
             optionalServices: ["00001855-0000-1000-8000-00805f9b34fb"],
           });
 
+          console.log("Terhubung ke perangkat:", device.name);
           const server = await device.gatt.connect();
           const service = await server.getPrimaryService(
             "00001855-0000-1000-8000-00805f9b34fb"
@@ -459,15 +479,39 @@
             grandTotal
           )}\n`;
 
+          console.log("Data untuk dicetak:", printData);
+
+          // Konfirmasi sebelum menghapus data
+          const confirmPrint = confirm(
+            "Apakah Anda yakin ingin mencetak laporan ini? Setelah dicetak, data laporan akan dihapus."
+          );
+
+          if (!confirmPrint) {
+            alert("Proses cetak dibatalkan.");
+            device.gatt.disconnect();
+            console.log("Proses cetak dibatalkan oleh pengguna");
+            return;
+          }
+
           // Mengkodekan data menjadi Uint8Array
           const encoder = new TextEncoder();
           const data = encoder.encode(printData);
 
+          console.log("Mengirim data ke printer...");
           // Mengirim data ke printer
           await characteristic.writeValue(data);
+          console.log("Data berhasil dikirim ke printer");
 
           alert("Laporan berhasil dikirim ke printer Bluetooth.");
+
+          // Menghapus data setelah cetak berhasil
+          salesData = [];
+          saveData();
+          renderTable();
+          console.log("Data laporan dihapus setelah cetak");
+
           device.gatt.disconnect();
+          console.log("Perangkat Bluetooth diputuskan");
         } catch (error) {
           console.error("Gagal mencetak:", error);
           alert(
