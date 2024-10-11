@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Laporan Harian Sales</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        background-color: #eef2f3;
+        margin: 0;
+        padding: 20px;
+      }
+      .container {
+        max-width: 900px;
+        margin: auto;
+        background-color: #fff;
+        padding: 25px;
+        border-radius: 8px;
+        box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+      }
+      h1,
+      h2 {
+        text-align: center;
+        color: #333;
+      }
+      form {
+        margin-bottom: 30px;
+      }
+      label {
+        display: block;
+        margin-top: 15px;
+        color: #555;
+      }
+      input[type="text"],
+      input[type="number"],
+      input[type="date"] {
+        width: 100%;
+        padding: 10px;
+        margin-top: 5px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+      }
+      .items-container {
+        margin-top: 20px;
+        border: 1px solid #ddd;
+        padding: 15px;
+        border-radius: 5px;
+        background-color: #f9f9f9;
+      }
+      .item-row {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+        align-items: flex-end;
+      }
+      .item-row > div {
+        flex: 1;
+      }
+      .item-row label {
+        margin-top: 0;
+      }
+      .remove-item {
+        background-color: #dc3545;
+        color: white;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 4px;
+        cursor: pointer;
+        margin-bottom: 10px;
+      }
+      .remove-item:hover {
+        background-color: #c82333;
+      }
+      .add-item {
+        background-color: #28a745;
+        color: white;
+        border: none;
+        padding: 10px 15px;
+        border-radius: 5px;
+        cursor: pointer;
+        margin-top: 10px;
+      }
+      .add-item:hover {
+        background-color: #218838;
+      }
+      button[type="submit"] {
+        margin-top: 20px;
+        padding: 12px 20px;
+        background-color: #007bff;
+        color: white;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        width: 100%;
+        font-size: 16px;
+      }
+      button[type="submit"]:hover {
+        background-color: #0056b3;
+      }
+      #printButton {
+        background-color: #17a2b8;
+      }
+      #printButton:hover {
+        background-color: #138496;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 25px;
+      }
+      th,
+      td {
+        padding: 12px;
+        border: 1px solid #ddd;
+        text-align: center;
+        vertical-align: top;
+      }
+      th {
+        background-color: #f8f9fa;
+      }
+      .total {
+        font-weight: bold;
+        background-color: #f1f1f1;
+      }
+      .item-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-top: 10px;
+      }
+      .item-table th,
+      .item-table td {
+        padding: 8px;
+        border: 1px solid #ccc;
+        text-align: center;
+      }
+      .item-table th {
+        background-color: #e9ecef;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Laporan Harian Sales</h1>
+
+      <!-- Form Input Sales -->
+      <form id="salesForm">
+        <label for="salesName">Nama Sales:</label>
+        <input type="text" id="salesName" name="salesName" required />
+
+        <label for="date">Tanggal:</label>
+        <input type="date" id="date" name="date" required />
+
+        <div class="items-container" id="itemsContainer">
+          <h3>Daftar Barang</h3>
+          <div class="item-row">
+            <div>
+              <label>Nama Barang:</label>
+              <input type="text" name="product" required />
+            </div>
+            <div>
+              <label>Jumlah Barang:</label>
+              <input type="number" name="quantity" min="1" required />
+            </div>
+            <div>
+              <label>Harga Satuan (Rp):</label>
+              <input type="number" name="price" min="0" required />
+            </div>
+            <div>
+              <button type="button" class="remove-item">Hapus</button>
+            </div>
+          </div>
+        </div>
+
+        <button type="button" class="add-item" id="addItemButton">
+          Tambah Barang
+        </button>
+
+        <button type="submit">Simpan Laporan</button>
+      </form>
+
+      <!-- Tabel Laporan Sales -->
+      <h2>Data Laporan Sales</h2>
+      <table id="salesTable">
+        <thead>
+          <tr>
+            <th>No</th>
+            <th>Nama Sales</th>
+            <th>Tanggal</th>
+            <th>Daftar Barang</th>
+            <th>Total Penjualan (Rp)</th>
+          </tr>
+        </thead>
+        <tbody>
+          <!-- Data akan ditambahkan di sini -->
+        </tbody>
+        <tfoot>
+          <tr>
+            <td colspan="4" class="total">Total Semua Penjualan</td>
+            <td id="grandTotal">Rp 0</td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <!-- Tombol Cetak -->
+      <button id="printButton">Cetak Laporan via Bluetooth</button>
+    </div>
+
+    <script>
+      // Fungsi untuk memformat angka menjadi format Rupiah
+      function formatRupiah(number) {
+        return "Rp " + number.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+      }
+
+      // Mengambil referensi elemen
+      const salesForm = document.getElementById("salesForm");
+      const salesTableBody = document.querySelector("#salesTable tbody");
+      const grandTotalElem = document.getElementById("grandTotal");
+      const printButton = document.getElementById("printButton");
+      const addItemButton = document.getElementById("addItemButton");
+      const itemsContainer = document.getElementById("itemsContainer");
+
+      let salesData = [];
+
+      // Load data dari LocalStorage saat halaman dimuat
+      window.onload = function () {
+        const storedData = localStorage.getItem("salesData");
+        if (storedData) {
+          salesData = JSON.parse(storedData);
+          renderTable();
+        }
+      };
+
+      // Menyimpan data ke LocalStorage
+      function saveData() {
+        localStorage.setItem("salesData", JSON.stringify(salesData));
+      }
+
+      // Menambahkan baris item baru
+      function addItemRow() {
+        const itemRow = document.createElement("div");
+        itemRow.className = "item-row";
+        itemRow.innerHTML = `
+            <div>
+                <label>Nama Barang:</label>
+                <input type="text" name="product" required>
+            </div>
+            <div>
+                <label>Jumlah Barang:</label>
+                <input type="number" name="quantity" min="1" required>
+            </div>
+            <div>
+                <label>Harga Satuan (Rp):</label>
+                <input type="number" name="price" min="0" required>
+            </div>
+            <div>
+                <button type="button" class="remove-item">Hapus</button>
+            </div>
+        `;
+        itemsContainer.appendChild(itemRow);
+      }
+
+      // Event listener untuk menambah item
+      addItemButton.addEventListener("click", addItemRow);
+
+      // Event delegation untuk menghapus item
+      itemsContainer.addEventListener("click", function (e) {
+        if (e.target && e.target.classList.contains("remove-item")) {
+          const itemRows = document.querySelectorAll(".item-row");
+          if (itemRows.length > 1) {
+            e.target.closest(".item-row").remove();
+          } else {
+            alert("Minimal harus ada satu barang.");
+          }
+        }
+      });
+
+      // Menambahkan data ke tabel
+      function renderTable() {
+        salesTableBody.innerHTML = "";
+        let grandTotal = 0;
+        salesData.forEach((report, index) => {
+          // Menghitung total per laporan
+          let totalPerReport = 0;
+          report.items.forEach((item) => {
+            totalPerReport += item.quantity * item.price;
+          });
+          grandTotal += totalPerReport;
+
+          // Membuat tabel barang dalam sel
+          let itemsTable = `
+                <table class="item-table">
+                    <thead>
+                        <tr>
+                            <th>No</th>
+                            <th>Nama Barang</th>
+                            <th>Jumlah</th>
+                            <th>Harga Satuan (Rp)</th>
+                            <th>Total (Rp)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+          report.items.forEach((item, idx) => {
+            const total = item.quantity * item.price;
+            itemsTable += `
+                    <tr>
+                        <td>${idx + 1}</td>
+                        <td>${item.product}</td>
+                        <td>${item.quantity}</td>
+                        <td>${formatRupiah(item.price)}</td>
+                        <td>${formatRupiah(total)}</td>
+                    </tr>
+                `;
+          });
+          itemsTable += `
+                    </tbody>
+                </table>
+            `;
+
+          const row = document.createElement("tr");
+
+          row.innerHTML = `
+                <td>${index + 1}</td>
+                <td>${report.salesName}</td>
+                <td>${report.date}</td>
+                <td>${itemsTable}</td>
+                <td>${formatRupiah(totalPerReport)}</td>
+            `;
+          salesTableBody.appendChild(row);
+        });
+        grandTotalElem.textContent = formatRupiah(grandTotal);
+      }
+
+      // Event listener untuk form submission
+      salesForm.addEventListener("submit", function (e) {
+        e.preventDefault();
+
+        // Mengambil nilai dari form
+        const salesName = document.getElementById("salesName").value.trim();
+        const date = document.getElementById("date").value;
+
+        // Mengambil semua item
+        const itemRows = document.querySelectorAll(".item-row");
+        let items = [];
+        let valid = true;
+
+        itemRows.forEach((row) => {
+          const product = row
+            .querySelector('input[name="product"]')
+            .value.trim();
+          const quantity = parseInt(
+            row.querySelector('input[name="quantity"]').value
+          );
+          const price = parseInt(
+            row.querySelector('input[name="price"]').value
+          );
+
+          if (!product || quantity <= 0 || price < 0) {
+            valid = false;
+            return;
+          }
+
+          items.push({ product, quantity, price });
+        });
+
+        if (!valid || items.length === 0) {
+          alert("Silakan isi semua field barang dengan benar.");
+          return;
+        }
+
+        // Menambahkan data ke array
+        salesData.push({ salesName, date, items });
+
+        // Menyimpan dan merender tabel
+        saveData();
+        renderTable();
+
+        // Reset form
+        salesForm.reset();
+
+        // Reset items to one empty row
+        itemsContainer.innerHTML = `
+            <h3>Daftar Barang</h3>
+            <div class="item-row">
+                <div>
+                    <label>Nama Barang:</label>
+                    <input type="text" name="product" required>
+                </div>
+                <div>
+                    <label>Jumlah Barang:</label>
+                    <input type="number" name="quantity" min="1" required>
+                </div>
+                <div>
+                    <label>Harga Satuan (Rp):</label>
+                    <input type="number" name="price" min="0" required>
+                </div>
+                <div>
+                    <button type="button" class="remove-item">Hapus</button>
+                </div>
+            </div>
+        `;
+
+        alert("Laporan berhasil disimpan.");
+      });
+
+      // Fungsi untuk menghubungkan dan mencetak ke printer Bluetooth
+      async function connectAndPrint() {
+        if (!navigator.bluetooth) {
+          alert("Browser Anda tidak mendukung Web Bluetooth API.");
+          return;
+        }
+
+        try {
+          // Meminta perangkat Bluetooth dengan layanan Printer (UUID bisa disesuaikan)
+          const device = await navigator.bluetooth.requestDevice({
+            filters: [{ services: ["00001855-0000-1000-8000-00805f9b34fb"] }], // Contoh UUID untuk Printer
+            optionalServices: ["00001855-0000-1000-8000-00805f9b34fb"],
+          });
+
+          const server = await device.gatt.connect();
+          const service = await server.getPrimaryService(
+            "00001855-0000-1000-8000-00805f9b34fb"
+          );
+          const characteristic = await service.getCharacteristic(
+            "00002a40-0000-1000-8000-00805f9b34fb"
+          );
+
+          // Menyiapkan data laporan untuk dicetak
+          let printData = "Laporan Harian Sales\n\n";
+          salesData.forEach((report, index) => {
+            let totalPerReport = 0;
+            printData += `No: ${index + 1}\n`;
+            printData += `Nama Sales: ${report.salesName}\n`;
+            printData += `Tanggal: ${report.date}\n`;
+            printData += `Daftar Barang:\n`;
+            report.items.forEach((item, idx) => {
+              const total = item.quantity * item.price;
+              totalPerReport += total;
+              printData += `  ${idx + 1}. ${item.product} | Jumlah: ${
+                item.quantity
+              } | Harga: ${formatRupiah(item.price)} | Total: ${formatRupiah(
+                total
+              )}\n`;
+            });
+            printData += `Total Penjualan: ${formatRupiah(totalPerReport)}\n\n`;
+          });
+          // Menghitung grand total
+          let grandTotal = salesData.reduce((acc, report) => {
+            return (
+              acc +
+              report.items.reduce(
+                (sum, item) => sum + item.quantity * item.price,
+                0
+              )
+            );
+          }, 0);
+          printData += `Grand Total Semua Penjualan: ${formatRupiah(
+            grandTotal
+          )}\n`;
+
+          // Mengkodekan data menjadi Uint8Array
+          const encoder = new TextEncoder();
+          const data = encoder.encode(printData);
+
+          // Mengirim data ke printer
+          await characteristic.writeValue(data);
+
+          alert("Laporan berhasil dikirim ke printer Bluetooth.");
+          device.gatt.disconnect();
+        } catch (error) {
+          console.error("Gagal mencetak:", error);
+          alert(
+            "Gagal mencetak laporan. Pastikan printer Bluetooth terhubung dan mendukung Web Bluetooth API."
+          );
+        }
+      }
+
+      // Event listener untuk tombol cetak
+      printButton.addEventListener("click", connectAndPrint);
+    </script>
+  </body>
+</html>
